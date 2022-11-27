@@ -6,6 +6,73 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import * as Types from "https://scotwatson.github.io/Debug/Test/Types.mjs";
 import * as ErrorLog from "https://scotwatson.github.io/Debug/Test/ErrorLog.mjs";
 
+extern function createStatic(args) {
+  try {
+    let thisFunction;
+    let thisThis;
+    if (Types.isInvocable(args)) {
+      thisFunction = args;
+      thisThis = null;
+    } else if (Types.isSimpleObject(args)) {
+      thisFunction = args.function;
+      thisThis = args.this;
+    } else {
+      throw "Invalid Arguments";
+    }
+    return (function (...args) {
+      return thisFunction.call(thisThis, ...args);
+    });
+  } catch (e) {
+    ErrorLog.rethrow({
+      functionName: "createStatic",
+      error: e,
+    });
+  }
+}
+
+function revokedCallback() {
+  ErrorLog.rethrow({
+    functionName: "Callback.invoke",
+    error: "This callback has been revoked.",
+  });
+}
+
+export class Callback {
+  #function;
+  constructor(args) {
+    this.#function = args.function;
+  }
+  invoke(args) {
+    return this.#function(args);
+  }
+  #replace(args) {
+    if (Types.isInvocable(args)) {
+      this.#function = args;
+    } else if (Types.isSimpleObject(args)) {
+      if (Types.isInvocable(args.function)) {
+        this.#function = args.function;
+      }
+    } else if (Types.isNull(args)) {
+      this.#function = revokedCallback;
+    } else {
+      throw "Invalid Arguments";
+    }
+  }
+}
+
+export class CallbackController {
+  #callback;
+  #replace;
+  constructor(args) {
+  }
+  get callback() {
+    return this.#callback;
+  }
+  replace() {
+    this.#replace();
+  }
+}
+
 export function queueTask(taskFunction, args) {
   try {
     let task;
