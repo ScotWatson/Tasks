@@ -8,17 +8,19 @@ import * as ErrorLog from "https://scotwatson.github.io/Debug/Test/ErrorLog.mjs"
 
 extern function createStatic(args) {
   try {
-    let thisFunction;
-    let thisThis;
-    if (Types.isInvocable(args)) {
-      thisFunction = args;
-      thisThis = null;
-    } else if (Types.isSimpleObject(args)) {
-      thisFunction = args.function;
-      thisThis = args.this;
-    } else {
-      throw "Invalid Arguments";
-    }
+    const { thisFunction, thisThis } = (function () {
+      let ret = {};
+      if (Types.isInvocable(args)) {
+        ret.thisFunction = args;
+        ret.thisThis = null;
+      } else if (Types.isSimpleObject(args)) {
+        ret.thisFunction = args.function;
+        ret.thisThis = args.this;
+      } else {
+        throw "Invalid Arguments";
+      }
+      return ret;
+    })();
     return (function (...args) {
       return thisFunction.call(thisThis, ...args);
     });
@@ -30,32 +32,56 @@ extern function createStatic(args) {
   }
 }
 
-function revokedCallback() {
-  ErrorLog.rethrow({
-    functionName: "Callback.invoke",
-    error: "This callback has been revoked.",
-  });
-}
-
 export class Callback {
   #function;
   constructor(args) {
-    this.#function = args.function;
+    try {
+      this.#function = null;
+      this.#replace(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Callback constructor",
+        error: e,
+      });
+    }
   }
   invoke(args) {
-    return this.#function(args);
+    try {
+      if (Types.isNull(this.#function)) {
+        throw "This callback has been revoked.";
+      }
+      return this.#function(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Callback.invoke",
+        error: e,
+      });
+    }
+  }
+  isRevoked() {
+    return (this.#function === null);
   }
   #replace(args) {
-    if (Types.isInvocable(args)) {
-      this.#function = args;
-    } else if (Types.isSimpleObject(args)) {
-      if (Types.isInvocable(args.function)) {
-        this.#function = args.function;
+    try {
+      if (Types.isInvocable(args)) {
+        this.#function = args;
+      } else if (Types.isSimpleObject(args)) {
+        if (!(Object.hasOwn(args, "function"))) {
+          return;
+        }
+        if (Types.isInvocable(args.function)) {
+          this.#function = args.function;
+        }
+      } else if (Types.isNull(args)) {
+        this.#function = null;
+      } else {
+        throw "Invalid Arguments";
       }
-    } else if (Types.isNull(args)) {
-      this.#function = revokedCallback;
-    } else {
-      throw "Invalid Arguments";
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Callback.replace",
+        error: e,
+      });
     }
   }
 }
@@ -64,38 +90,70 @@ export class CallbackController {
   #callback;
   #replace;
   constructor(args) {
+    try {
+      this.#callback = new Callback(args);
+      this.#replace = args.replace;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "CallbackController constructor",
+        error: e,
+      });
+    }
   }
   get callback() {
-    return this.#callback;
+    try {
+      return this.#callback;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "get CallbackController.callback",
+        error: e,
+      });
+    }
   }
-  replace() {
-    this.#replace();
+  replace(args) {
+    try {
+      this.#replace(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "CallbackController.replace",
+        error: e,
+      });
+    }
   }
 }
 
-export function queueTask(taskFunction, args) {
+export function queueTask(args) {
   try {
-    let task;
-    let taskArgs;
-    if (Types.isInvocable(args)) {
-      task = args;
-    } else if (Types.isSimpleObject(args)) {
-      if (!(Object.hasOwn(args, "task"))) {
-        throw "Argument \"task\" is required.";
+    function isCallback(callback) {
+      if ("invoke" in args.callback) {
+        throw "Argument \"callback\" must have an \"invoke\" function.";
       }
-      if (!(Types.isInvocable(args.task))) {
-        throw "Argument \"task\" must be invocable.";
+      if (!(Types.isInvocable(args.callback.invoke))) {
+        throw "\"callback.invoke\" must be invocable."
       }
-      task = args.task;
-      if (Object.hasOwn(args, "args")) {
-        taskArgs = args.args;
-      }
-    } else {
-      throw "Invalid Argument";
     }
+    const { task, taskArgs } = (function () {
+      let ret = {};
+      if (args) {
+        isCallback(args);
+        task = args;
+      } else if (Types.isSimpleObject(args)) {
+        if (!(Object.hasOwn(args, "callback"))) {
+          throw "Argument \"callback\" is required.";
+        }
+        isCallback(args.callback);
+        task = args.callback;
+        if (Object.hasOwn(args, "args")) {
+          taskArgs = args.args;
+        }
+      } else {
+        throw "Invalid Argument";
+      }
+      return ret;
+    })();
     function taskCallback() {
       try {
-        task(taskArgs);
+        task.invoke(taskArgs);
       } catch (e) {
         ErrorLog.topLevel({
           functionName: "queueTask callback",
@@ -115,27 +173,36 @@ export function queueTask(taskFunction, args) {
 
 export function queueMicrotask(args) {
   try {
-    let task;
-    let taskArgs;
-    if (Types.isInvocable(args)) {
-      task = args;
-    } else if (Types.isSimpleObject(args)) {
-      if (!(Object.hasOwn(args, "task"))) {
-        throw "Argument \"task\" is required.";
+    function isCallback(callback) {
+      if ("invoke" in args.callback) {
+        throw "Argument \"callback\" must have an \"invoke\" function.";
       }
-      if (!(Types.isInvocable(args.task))) {
-        throw "Argument \"task\" must be invocable.";
+      if (!(Types.isInvocable(args.callback.invoke))) {
+        throw "\"callback.invoke\" must be invocable."
       }
-      task = args.task;
-      if (Object.hasOwn(args, "args")) {
-        taskArgs = args.args;
-      }
-    } else {
-      throw "Invalid Argument";
     }
+    const { task, taskArgs } = (function () {
+      let ret = {};
+      if (args) {
+        isCallback(args);
+        task = args;
+      } else if (Types.isSimpleObject(args)) {
+        if (!(Object.hasOwn(args, "callback"))) {
+          throw "Argument \"callback\" is required.";
+        }
+        isCallback(args.callback);
+        task = args.callback;
+        if (Object.hasOwn(args, "args")) {
+          taskArgs = args.args;
+        }
+      } else {
+        throw "Invalid Argument";
+      }
+      return ret;
+    })();
     function taskCallback() {
       try {
-        task(taskArgs);
+        task.invoke(taskArgs);
       } catch (e) {
         ErrorLog.topLevel({
           functionName: "queueMicrotask callback",
@@ -153,35 +220,109 @@ export function queueMicrotask(args) {
 }
 
 export class Signal {
-  #listeners;
+  #callbackSet;
   constructor(args) {
-    this.#listeners = new Set();
-    args.dispatch = this.#dispatch.bind(this);
+    try {
+      this.#callbackSet = new Set();
+      args.dispatch = createStatic({
+        function: this.#dispatch,
+        this: this,
+      });
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Signal constructor",
+        error: e,
+      });
+    }
   }
   add(args) {
-    this.#listeners.add(args);
+    try {
+      function isCallback(callback) {
+        if (!("invoke" in callback)) {
+          return false;
+        }
+        if (!(Types.isInvocable(callback.invoke))) {
+          return false;
+        }
+        if (!("isRevoked" in callback)) {
+          return false;
+        }
+        if (!(Types.isInvocable(callback.isRevoked))) {
+          return false;
+        }
+      }
+      const callback = (function () {
+        if (isCallback(args)) {
+          return args;
+        } else if (Types.isSimpleObject(args)) {
+          if (!(isCallback(args.callback))) {
+            throw "Argument \"callback\" must be a Callback.";
+          }
+          return args.callback;
+        } else {
+          throw "Invalid Argument";
+        }
+      })();
+      this.#callbackSet.add(callback);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Signal.add",
+        error: e,
+      });
+    }
   }
   remove(args) {
-    this.#listeners.delete(args);
+    try {
+      this.#callbackSet.delete(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Signal.remove",
+        error: e,
+      });
+    }
+  }
+  removeIfRevoked() {
+    try {
+      const newCallbackSet = new Set();
+      for (const callback of this.#callbackSet) {
+        if (!(callback.isRevoked())) {
+          newCallbackSet.add(callback);
+        }
+      }
+      this.#callbackSet = newCallbackSet;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Signal.removeIfRevoked",
+        error: e,
+      });
+    }
   }
   #dispatch(args) {
-    for (const listener of this.#listeners) {
-      queueTask({
-        task: listener,
-        args: args
+    try {
+      Object.freeze(args);
+      for (const callback of this.#callbackSet) {
+        queueTask({
+          callback: callback,
+          args: args,
+        });
+      }
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Signal.dispatch",
+        error: e,
       });
     }
   }
 }
 
-export class Controller {
+export class SignalController {
   #dispatch;
   constructor(args) {
     const signalArgs = {};
     let signal = new Signal(signalArgs);
     this.#dispatch = args.dispatch;
   }
-  fire(args) {
+  dispatch(args) {
     this.#dispatch(args);
   }
 }
