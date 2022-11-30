@@ -91,8 +91,10 @@ export class CallbackController {
   #replace;
   constructor(args) {
     try {
-      this.#callback = new Callback(args);
-      this.#replace = args.replace;
+      const callbackArgs = {};
+      callbackArgs.function = args.function;
+      this.#callback = new Callback(callbackArgs);
+      this.#replace = callbackArgs.replace;
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "CallbackController constructor",
