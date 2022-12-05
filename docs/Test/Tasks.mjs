@@ -273,16 +273,6 @@ export class Signal {
       });
     }
   }
-  remove(args) {
-    try {
-      this.#callbackSet.delete(args);
-    } catch (e) {
-      ErrorLog.rethrow({
-        functionName: "Signal.remove",
-        error: e,
-      });
-    }
-  }
   removeAllRevoked() {
     try {
       const newCallbackSet = new Set();
