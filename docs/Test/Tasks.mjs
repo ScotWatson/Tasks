@@ -6,7 +6,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 import * as Types from "https://scotwatson.github.io/Debug/Test/Types.mjs";
 import * as ErrorLog from "https://scotwatson.github.io/Debug/Test/ErrorLog.mjs";
 
-extern function createStatic(args) {
+export function createStatic(args) {
   try {
     const { thisFunction, thisThis } = (function () {
       let ret = {};
@@ -283,7 +283,7 @@ export class Signal {
       });
     }
   }
-  removeIfRevoked() {
+  removeAllRevoked() {
     try {
       const newCallbackSet = new Set();
       for (const callback of this.#callbackSet) {
@@ -294,18 +294,16 @@ export class Signal {
       this.#callbackSet = newCallbackSet;
     } catch (e) {
       ErrorLog.rethrow({
-        functionName: "Signal.removeIfRevoked",
+        functionName: "Signal.removeAllRevoked",
         error: e,
       });
     }
   }
-  #dispatch(args) {
+  #dispatch() {
     try {
-      Object.freeze(args);
       for (const callback of this.#callbackSet) {
         queueTask({
           callback: callback,
-          args: args,
         });
       }
     } catch (e) {
@@ -322,9 +320,9 @@ export class SignalController {
   constructor(args) {
     const signalArgs = {};
     let signal = new Signal(signalArgs);
-    this.#dispatch = args.dispatch;
+    this.#dispatch = signalArgs.dispatch;
   }
-  dispatch(args) {
-    this.#dispatch(args);
+  dispatch() {
+    this.#dispatch();
   }
 }
