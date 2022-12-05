@@ -45,12 +45,12 @@ export class Callback {
       });
     }
   }
-  invoke(args) {
+  invoke(...args) {
     try {
       if (Types.isNull(this.#function)) {
         throw "This callback has been revoked.";
       }
-      return this.#function(args);
+      return this.#function(...args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "Callback.invoke",
