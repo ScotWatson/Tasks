@@ -124,6 +124,144 @@ export class CallbackController {
   }
 }
 
+export class ByteCallback {
+  #functionAllocate; // accepts byteLength (integer), return Memory.View
+  // Allocate a buffer of length byteLength.
+  // Only the last returned buffer is valid; all othee buffers are invalidated.
+  #functionInvoke; // accepts byteLength (integer), return value ignored
+  // Use byteLength bytes of the last allocated buffer as input.
+  // The last allocation is no longer valid after return.
+  constructor(args) {
+    try {
+      this.#functionAllocate = null;
+      this.#functionInvoke = null;
+      this.#replace(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "ByteCallback constructor",
+        error: e,
+      });
+    }
+  }
+  allocate(byteLength) {
+    try {
+      if (Types.isNull(this.#functionAllocate)) {
+        throw "This callback has been revoked.";
+      }
+      const byteLength = (function () {
+        if (Types.isInteger(args)) {
+          return args;
+        } else if (Types.isSimpleObject(args)) {
+          if (!(Types.isInteger(args.byteLength))) {
+            throw "Argument \"byteLength\" must be an integer.";
+          }
+        } else {
+          throw "Invalid Arguments";
+        }
+      })();
+      return this.#functionAllocate(byteLength);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "ByteCallback.allocate",
+        error: e,
+      });
+    }
+  }
+  invoke(args) {
+    try {
+      if (Types.isNull(this.#functionInvoke)) {
+        throw "This callback has been revoked.";
+      }
+      const byteLength = (function () {
+        if (Types.isInteger(args)) {
+          return args;
+        } else if (Types.isSimpleObject(args)) {
+          if (!(Types.isInteger(args.byteLength))) {
+            throw "Argument \"byteLength\" must be an integer.";
+          }
+        } else {
+          throw "Invalid Arguments";
+        }
+      })();
+      return this.#functionInvoke(byteLength);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "ByteCallback.invoke",
+        error: e,
+      });
+    }
+  }
+  isRevoked() {
+    return ((this.#functionAllocate === null) || (this.#functionInvoke === null));
+  }
+  #replace(args) {
+    try {
+      if (Types.isNull(args)) {
+        this.#functionAllocate = null;
+        this.#functionInvoke = null;
+      } else if (!(Types.isSimpleObject(args))) {
+        if (!(Object.hasOwn(args, "functionAllocate"))) {
+          return;
+        }
+        if (Types.isInvocable(args.functionAllocate)) {
+          this.#functionAllocate = args.functionAllocate;
+        }
+        if (!(Object.hasOwn(args, "functionInvoke"))) {
+          return;
+        }
+        if (Types.isInvocable(args.functionInvoke)) {
+          this.#functionInvoke = args.functionInvoke;
+        }
+      } else {
+        throw "Invalid Arguments";
+      }
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "ByteCallback.replace",
+        error: e,
+      });
+    }
+  }
+}
+
+export class ByteCallbackController {
+  #callback;
+  #replace;
+  constructor(args) {
+    try {
+      const callbackArgs = {};
+      callbackArgs.function = args.function;
+      this.#callback = new Callback(callbackArgs);
+      this.#replace = callbackArgs.replace;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "ByteCallbackController constructor",
+        error: e,
+      });
+    }
+  }
+  get callback() {
+    try {
+      return this.#callback;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "get ByteCallbackController.callback",
+        error: e,
+      });
+    }
+  }
+  replace(args) {
+    try {
+      this.#replace(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "ByteCallbackController.replace",
+        error: e,
+      });
+    }
+  }
+}
+
 export function queueTask(args) {
   try {
     function isCallback(callback) {
