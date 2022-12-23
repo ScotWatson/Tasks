@@ -61,6 +61,16 @@ export class Callback {
   isRevoked() {
     return (this.#function === null);
   }
+  createClone() {
+    try {
+      return new Callback(this.#function);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "Callback.createClone",
+        error: e,
+      });
+    }
+  }
   #replace(args) {
     try {
       if (Types.isInvocable(args)) {
@@ -123,6 +133,47 @@ export class CallbackController {
     }
   }
 }
+
+export class UniqueCallbackController {
+  #callback;
+  #replace;
+  constructor(args) {
+    try {
+      const callbackArgs = {};
+      callbackArgs.function = args.function;
+      this.#callback = new Callback(callbackArgs);
+      this.#replace = callbackArgs.replace;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "UniqueCallbackController constructor",
+        error: e,
+      });
+    }
+  }
+  get callback() {
+    try {
+      const newCallback = this.#callback.createClone();
+      this.#callback.replace(null);
+      this.#callback = newCallback;
+      return this.#callback;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "get UniqueCallbackController.callback",
+        error: e,
+      });
+    }
+  }
+  replace(args) {
+    try {
+      this.#replace(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "UniqueCallbackController.replace",
+        error: e,
+      });
+    }
+  }
+};
 
 export class ByteCallback {
   #functionAllocate; // accepts byteLength (integer), return Memory.View
@@ -194,6 +245,9 @@ export class ByteCallback {
   isRevoked() {
     return ((this.#functionAllocate === null) || (this.#functionInvoke === null));
   }
+  isRevoked() {
+    return ((this.#functionAllocate === null) || (this.#functionInvoke === null));
+  }
   #replace(args) {
     try {
       if (Types.isNull(args)) {
@@ -231,7 +285,7 @@ export class ByteCallbackController {
     try {
       const callbackArgs = {};
       callbackArgs.function = args.function;
-      this.#callback = new Callback(callbackArgs);
+      this.#callback = new ByteCallback(callbackArgs);
       this.#replace = callbackArgs.replace;
     } catch (e) {
       ErrorLog.rethrow({
@@ -261,6 +315,47 @@ export class ByteCallbackController {
     }
   }
 }
+
+export class UniqueByteCallbackController {
+  #callback;
+  #replace;
+  constructor(args) {
+    try {
+      const callbackArgs = {};
+      callbackArgs.function = args.function;
+      this.#callback = new ByteCallback(callbackArgs);
+      this.#replace = callbackArgs.replace;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "UniqueByteCallbackController constructor",
+        error: e,
+      });
+    }
+  }
+  get callback() {
+    try {
+      const newCallback = this.#callback.createClone();
+      this.#callback.replace(null);
+      this.#callback = newCallback;
+      return this.#callback;
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "get UniqueByteCallbackController.callback",
+        error: e,
+      });
+    }
+  }
+  replace(args) {
+    try {
+      this.#replace(args);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "UniqueByteCallbackController.replace",
+        error: e,
+      });
+    }
+  }
+};
 
 export function queueTask(args) {
   try {
