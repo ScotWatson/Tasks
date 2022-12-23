@@ -67,16 +67,16 @@ export class Callback {
   // No exception handling is provided on this function so all errors appear to originate in the calling function.
   [symReplace](args) {
     if (Types.isInvocable(args)) {
-      this.#function = args;
+      this.#invoke = args;
     } else if (Types.isSimpleObject(args)) {
       if (!(Object.hasOwn(args, "invoke"))) {
         return;
       }
-      if (Types.isInvocable(args.function)) {
-        this.#function = args.function;
+      if (Types.isInvocable(args.invoke)) {
+        this.#invoke = args.invoke;
       }
     } else if (Types.isNull(args)) {
-      this.#function = null;
+      this.#invoke = null;
     } else {
       throw "Invalid Arguments";
     }
@@ -150,7 +150,21 @@ export class UniqueCallbackController {
   }
   replace(args) {
     try {
-      this.#callback[symReplace](args);
+      if (Types.isInvocable(args)) {
+        this.#invoke = args;
+      } else if (Types.isSimpleObject(args)) {
+        if (!(Object.hasOwn(args, "invoke"))) {
+          return;
+        }
+        if (Types.isInvocable(args.invoke)) {
+          this.#invoke = args.invoke;
+        }
+      } else if (Types.isNull(args)) {
+        this.#invoke = null;
+      } else {
+        throw "Invalid Arguments";
+      }
+      this.#callback[symReplace](this.#invoke);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "UniqueCallbackController.replace",
@@ -234,25 +248,24 @@ export class ByteCallback {
       this.#invoke = null;
     } else if (!(Types.isSimpleObject(args))) {
       if (!(Object.hasOwn(args, "allocate"))) {
-        return;
+        throw "Argument \"allocate\" must be provided.";
       }
       if (Types.isInvocable(args.allocate)) {
         this.#allocate = args.allocate;
+      } else {
+        this.#allocate = null;
       }
       if (!(Object.hasOwn(args, "invoke"))) {
-        return;
+        throw "Argument \"invoke\" must be provided.";
       }
       if (Types.isInvocable(args.invoke)) {
         this.#invoke = args.invoke;
+      } else {
+        this.#invoke = null;
       }
     } else {
       throw "Invalid Arguments";
     }
-  } catch (e) {
-    ErrorLog.rethrow({
-      functionName: "ByteCallback.replace",
-      error: e,
-    });
   }
 }
 
@@ -327,7 +340,33 @@ export class UniqueByteCallbackController {
   }
   replace(args) {
     try {
-      this.#callback[symReplace](args);
+      if (Types.isNull(args)) {
+        this.#allocate = null;
+        this.#invoke = null;
+      } else if (!(Types.isSimpleObject(args))) {
+        if (!(Object.hasOwn(args, "allocate"))) {
+          throw "Argument \"allocate\" must be provided.";
+        }
+        if (Types.isInvocable(args.allocate)) {
+          this.#allocate = args.allocate;
+        } else {
+          this.#allocate = null;
+        }
+        if (!(Object.hasOwn(args, "invoke"))) {
+          throw "Argument \"invoke\" must be provided.";
+        }
+        if (Types.isInvocable(args.invoke)) {
+          this.#invoke = args.invoke;
+        } else {
+          this.#invoke = null;
+        }
+      } else {
+        throw "Invalid Arguments";
+      }
+      this.#callback[symReplace]({
+        allocate: this.#allocate,
+        invoke: this.#invoke,
+      });
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "UniqueByteCallbackController.replace",
