@@ -32,11 +32,13 @@ export function createStatic(args) {
   }
 }
 
+const symReplace = Symbol("replace");
+
 export class Callback {
-  #function;
+  #invoke;
   constructor(args) {
     try {
-      this.#function = null;
+      this.#invoke = null;
       this.#replace(args);
     } catch (e) {
       ErrorLog.rethrow({
@@ -47,10 +49,10 @@ export class Callback {
   }
   invoke(...args) {
     try {
-      if (Types.isNull(this.#function)) {
+      if (Types.isNull(this.#invoke)) {
         throw "This callback has been revoked.";
       }
-      return this.#function(...args);
+      return this.#invoke(...args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "Callback.invoke",
@@ -61,50 +63,33 @@ export class Callback {
   isRevoked() {
     return (this.#function === null);
   }
-  createClone() {
-    try {
-      return new Callback(this.#function);
-    } catch (e) {
-      ErrorLog.rethrow({
-        functionName: "Callback.createClone",
-        error: e,
-      });
-    }
-  }
-  #replace(args) {
-    try {
-      if (Types.isInvocable(args)) {
-        this.#function = args;
-      } else if (Types.isSimpleObject(args)) {
-        if (!(Object.hasOwn(args, "function"))) {
-          return;
-        }
-        if (Types.isInvocable(args.function)) {
-          this.#function = args.function;
-        }
-      } else if (Types.isNull(args)) {
-        this.#function = null;
-      } else {
-        throw "Invalid Arguments";
+  // This is provided to allow the callback controller to replace the invoke function
+  // No exception handling is provided on this function so all errors appear to originate in the calling function.
+  [symReplace](args) {
+    if (Types.isInvocable(args)) {
+      this.#function = args;
+    } else if (Types.isSimpleObject(args)) {
+      if (!(Object.hasOwn(args, "invoke"))) {
+        return;
       }
-    } catch (e) {
-      ErrorLog.rethrow({
-        functionName: "Callback.replace",
-        error: e,
-      });
+      if (Types.isInvocable(args.function)) {
+        this.#function = args.function;
+      }
+    } else if (Types.isNull(args)) {
+      this.#function = null;
+    } else {
+      throw "Invalid Arguments";
     }
   }
 }
 
 export class CallbackController {
   #callback;
-  #replace;
   constructor(args) {
     try {
-      const callbackArgs = {};
-      callbackArgs.function = args.function;
-      this.#callback = new Callback(callbackArgs);
-      this.#replace = callbackArgs.replace;
+      this.#callback = new Callback({
+        invoke = args.invoke,
+      });
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "CallbackController constructor",
@@ -124,7 +109,7 @@ export class CallbackController {
   }
   replace(args) {
     try {
-      this.#replace(args);
+      this.#callback[symReplace](args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "CallbackController.replace",
@@ -135,14 +120,12 @@ export class CallbackController {
 }
 
 export class UniqueCallbackController {
+  #invoke;
   #callback;
-  #replace;
   constructor(args) {
     try {
-      const callbackArgs = {};
-      callbackArgs.function = args.function;
-      this.#callback = new Callback(callbackArgs);
-      this.#replace = callbackArgs.replace;
+      this.#invoke = args.invoke;
+      this.#callback = new Callback(null);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "UniqueCallbackController constructor",
@@ -152,7 +135,9 @@ export class UniqueCallbackController {
   }
   get callback() {
     try {
-      const newCallback = this.#callback.createClone();
+      const newCallback = new Callback({
+        invoke = this.#invoke,
+      });
       this.#callback.replace(null);
       this.#callback = newCallback;
       return this.#callback;
@@ -165,7 +150,7 @@ export class UniqueCallbackController {
   }
   replace(args) {
     try {
-      this.#replace(args);
+      this.#callback[symReplace](args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "UniqueCallbackController.replace",
@@ -176,16 +161,16 @@ export class UniqueCallbackController {
 };
 
 export class ByteCallback {
-  #functionAllocate; // accepts byteLength (integer), return Memory.View
+  #allocate; // accepts byteLength (integer), return Memory.View
   // Allocate a buffer of length byteLength.
   // Only the last returned buffer is valid; all othee buffers are invalidated.
-  #functionInvoke; // accepts byteLength (integer), return value ignored
+  #invoke; // accepts byteLength (integer), return value ignored
   // Use byteLength bytes of the last allocated buffer as input.
   // The last allocation is no longer valid after return.
   constructor(args) {
     try {
-      this.#functionAllocate = null;
-      this.#functionInvoke = null;
+      this.#allocate = null;
+      this.#invoke = null;
       this.#replace(args);
     } catch (e) {
       ErrorLog.rethrow({
@@ -194,9 +179,9 @@ export class ByteCallback {
       });
     }
   }
-  allocate(byteLength) {
+  allocate(args) {
     try {
-      if (Types.isNull(this.#functionAllocate)) {
+      if (Types.isNull(this.#allocate)) {
         throw "This callback has been revoked.";
       }
       const byteLength = (function () {
@@ -210,7 +195,7 @@ export class ByteCallback {
           throw "Invalid Arguments";
         }
       })();
-      return this.#functionAllocate(byteLength);
+      return this.#allocate(byteLength);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "ByteCallback.allocate",
@@ -234,7 +219,7 @@ export class ByteCallback {
           throw "Invalid Arguments";
         }
       })();
-      return this.#functionInvoke(byteLength);
+      return this.#invoke(byteLength);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "ByteCallback.invoke",
@@ -243,50 +228,46 @@ export class ByteCallback {
     }
   }
   isRevoked() {
-    return ((this.#functionAllocate === null) || (this.#functionInvoke === null));
+    return ((this.#allocate === null) || (this.#invoke === null));
   }
-  isRevoked() {
-    return ((this.#functionAllocate === null) || (this.#functionInvoke === null));
-  }
-  #replace(args) {
-    try {
-      if (Types.isNull(args)) {
-        this.#functionAllocate = null;
-        this.#functionInvoke = null;
-      } else if (!(Types.isSimpleObject(args))) {
-        if (!(Object.hasOwn(args, "functionAllocate"))) {
-          return;
-        }
-        if (Types.isInvocable(args.functionAllocate)) {
-          this.#functionAllocate = args.functionAllocate;
-        }
-        if (!(Object.hasOwn(args, "functionInvoke"))) {
-          return;
-        }
-        if (Types.isInvocable(args.functionInvoke)) {
-          this.#functionInvoke = args.functionInvoke;
-        }
-      } else {
-        throw "Invalid Arguments";
+  // This is provided to allow the byte callback controller to replace the allocate and invoke functions
+  // No exception handling is provided on this function so all errors appear to originate in the calling function.
+  [symReplace](args) {
+    if (Types.isNull(args)) {
+      this.#allocate = null;
+      this.#invoke = null;
+    } else if (!(Types.isSimpleObject(args))) {
+      if (!(Object.hasOwn(args, "allocate"))) {
+        return;
       }
-    } catch (e) {
-      ErrorLog.rethrow({
-        functionName: "ByteCallback.replace",
-        error: e,
-      });
+      if (Types.isInvocable(args.allocate)) {
+        this.#allocate = args.allocate;
+      }
+      if (!(Object.hasOwn(args, "invoke"))) {
+        return;
+      }
+      if (Types.isInvocable(args.invoke)) {
+        this.#invoke = args.invoke;
+      }
+    } else {
+      throw "Invalid Arguments";
     }
+  } catch (e) {
+    ErrorLog.rethrow({
+      functionName: "ByteCallback.replace",
+      error: e,
+    });
   }
 }
 
 export class ByteCallbackController {
   #callback;
-  #replace;
   constructor(args) {
     try {
-      const callbackArgs = {};
-      callbackArgs.function = args.function;
-      this.#callback = new ByteCallback(callbackArgs);
-      this.#replace = callbackArgs.replace;
+      this.#callback = new ByteCallback({
+        allocate: args.allocate,
+        invoke: args.invoke,
+      });
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "ByteCallbackController constructor",
@@ -306,7 +287,7 @@ export class ByteCallbackController {
   }
   replace(args) {
     try {
-      this.#replace(args);
+      this.#callback[symReplace](args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "ByteCallbackController.replace",
@@ -317,14 +298,14 @@ export class ByteCallbackController {
 }
 
 export class UniqueByteCallbackController {
+  #allocate;
+  #invoke;
   #callback;
-  #replace;
   constructor(args) {
     try {
-      const callbackArgs = {};
-      callbackArgs.function = args.function;
-      this.#callback = new ByteCallback(callbackArgs);
-      this.#replace = callbackArgs.replace;
+      this.#allocate = args.allocate;
+      this.#invoke = args.invoke;
+      this.#callback = new ByteCallback(null);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "UniqueByteCallbackController constructor",
@@ -334,7 +315,10 @@ export class UniqueByteCallbackController {
   }
   get callback() {
     try {
-      const newCallback = this.#callback.createClone();
+      const newCallback = new ByteCallback({
+        allocate: this.#allocate,
+        invoke: this.#function,
+      });
       this.#callback.replace(null);
       this.#callback = newCallback;
       return this.#callback;
@@ -347,7 +331,7 @@ export class UniqueByteCallbackController {
   }
   replace(args) {
     try {
-      this.#replace(args);
+      this.#callback[symReplace](args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "UniqueByteCallbackController.replace",
