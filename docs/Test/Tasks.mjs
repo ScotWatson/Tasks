@@ -161,12 +161,8 @@ export class UniqueCallbackController {
 };
 
 export class ByteCallback {
-  #allocate; // accepts byteLength (integer), return Memory.View
-  // Allocate a buffer of length byteLength.
-  // Only the last returned buffer is valid; all othee buffers are invalidated.
-  #invoke; // accepts byteLength (integer), return value ignored
-  // Use byteLength bytes of the last allocated buffer as input.
-  // The last allocation is no longer valid after return.
+  #allocate;
+  #invoke;
   constructor(args) {
     try {
       this.#allocate = null;
