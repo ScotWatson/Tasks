@@ -39,7 +39,7 @@ export class Callback {
   constructor(args) {
     try {
       this.#invoke = null;
-      this.#replace(args);
+      this[symReplace](args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "Callback constructor",
@@ -181,7 +181,7 @@ export class ByteCallback {
     try {
       this.#allocate = null;
       this.#invoke = null;
-      this.#replace(args);
+      this[symReplace](args);
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "ByteCallback constructor",
