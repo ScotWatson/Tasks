@@ -215,7 +215,7 @@ export class ByteCallback {
   }
   invoke(args) {
     try {
-      if (Types.isNull(this.#functionInvoke)) {
+      if (Types.isNull(this.#invoke)) {
         throw "This callback has been revoked.";
       }
       const byteLength = (function () {
