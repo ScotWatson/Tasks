@@ -61,7 +61,7 @@ export class Callback {
     }
   }
   isRevoked() {
-    return (this.#function === null);
+    return (this.#invoke === null);
   }
   // This is provided to allow the callback controller to replace the invoke function
   // No exception handling is provided on this function so all errors appear to originate in the calling function.
@@ -88,7 +88,7 @@ export class CallbackController {
   constructor(args) {
     try {
       this.#callback = new Callback({
-        invoke = args.invoke,
+        invoke: args.invoke,
       });
     } catch (e) {
       ErrorLog.rethrow({
@@ -136,7 +136,7 @@ export class UniqueCallbackController {
   get callback() {
     try {
       const newCallback = new Callback({
-        invoke = this.#invoke,
+        invoke: this.#invoke,
       });
       this.#callback.replace(null);
       this.#callback = newCallback;
