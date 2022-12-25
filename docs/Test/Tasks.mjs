@@ -379,29 +379,27 @@ export class UniqueByteCallbackController {
 export function queueTask(args) {
   try {
     function isCallback(callback) {
-      if ("invoke" in args.callback) {
+      if (!(Object.hasOwn(callback, "invoke"))) {
         throw "Argument \"callback\" must have an \"invoke\" function.";
       }
-      if (!(Types.isInvocable(args.callback.invoke))) {
+      if (!(Types.isInvocable(callback.invoke))) {
         throw "\"callback.invoke\" must be invocable."
       }
     }
     const { task, taskArgs } = (function () {
       let ret = {};
-      if (args) {
-        isCallback(args);
-        task = args;
-      } else if (Types.isSimpleObject(args)) {
+      if (Types.isSimpleObject(args)) {
         if (!(Object.hasOwn(args, "callback"))) {
           throw "Argument \"callback\" is required.";
         }
         isCallback(args.callback);
-        task = args.callback;
+        ret.task = args.callback;
         if (Object.hasOwn(args, "args")) {
-          taskArgs = args.args;
+          ret.taskArgs = args.args;
         }
       } else {
-        throw "Invalid Argument";
+        isCallback(args);
+        ret.task = args;
       }
       return ret;
     })();
