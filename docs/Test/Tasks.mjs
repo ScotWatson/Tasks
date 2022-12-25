@@ -138,7 +138,7 @@ export class UniqueCallbackController {
       const newCallback = new Callback({
         invoke: this.#invoke,
       });
-      this.#callback.replace(null);
+      this.#callback[symReplace](null);
       this.#callback = newCallback;
       return this.#callback;
     } catch (e) {
@@ -328,7 +328,7 @@ export class UniqueByteCallbackController {
         allocate: this.#allocate,
         invoke: this.#invoke,
       });
-      this.#callback.replace(null);
+      this.#callback[symReplace](null);
       this.#callback = newCallback;
       return this.#callback;
     } catch (e) {
