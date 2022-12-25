@@ -326,7 +326,7 @@ export class UniqueByteCallbackController {
     try {
       const newCallback = new ByteCallback({
         allocate: this.#allocate,
-        invoke: this.#function,
+        invoke: this.#invoke,
       });
       this.#callback.replace(null);
       this.#callback = newCallback;
