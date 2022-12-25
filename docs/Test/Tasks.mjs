@@ -379,7 +379,10 @@ export class UniqueByteCallbackController {
 export function queueTask(args) {
   try {
     function isCallback(callback) {
-      if (!(Object.hasOwn(callback, "invoke"))) {
+      if (!(Types.isObject(callback))) {
+        throw "Argument \"callback\" must be an object.";
+      }
+      if (!("invoke" in callback)) {
         throw "Argument \"callback\" must have an \"invoke\" function.";
       }
       if (!(Types.isInvocable(callback.invoke))) {
