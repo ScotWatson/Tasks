@@ -481,10 +481,6 @@ export class Signal {
   constructor(args) {
     try {
       this.#callbackSet = new Set();
-      args.dispatch = createStatic({
-        function: this.#dispatch,
-        this: this,
-      });
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "Signal constructor",
