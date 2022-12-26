@@ -474,6 +474,8 @@ export function queueMicrotask(args) {
   }
 }
 
+const symDispatch = Symbol("dispatch");
+
 export class Signal {
   #callbackSet;
   constructor(args) {
@@ -542,7 +544,7 @@ export class Signal {
       });
     }
   }
-  #dispatch() {
+  [symDispatch]() {
     try {
       for (const callback of this.#callbackSet) {
         queueTask({
@@ -559,13 +561,14 @@ export class Signal {
 }
 
 export class SignalController {
-  #dispatch;
+  #signal;
   constructor(args) {
-    const signalArgs = {};
-    let signal = new Signal(signalArgs);
-    this.#dispatch = signalArgs.dispatch;
+    this.#signal = new Signal({});
+  }
+  get signal() {
+    return this.#signal;
   }
   dispatch() {
-    this.#dispatch();
+    this[symDispatch]();
   }
 }
