@@ -490,6 +490,7 @@ export class Signal {
   }
   add(args) {
     try {
+      console.log(args);
       function isCallback(callback) {
         if (!("invoke" in callback)) {
           return false;
