@@ -148,6 +148,16 @@ export class UniqueCallbackController {
       });
     }
   }
+  revokeCallback() {
+    try {
+      this.#callback.replace(null);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "UniqueCallbackController.revokeCallback",
+        error: e,
+      });
+    }
+  }
   replace(args) {
     try {
       if (Types.isInvocable(args)) {
@@ -334,6 +344,16 @@ export class UniqueByteCallbackController {
     } catch (e) {
       ErrorLog.rethrow({
         functionName: "get UniqueByteCallbackController.callback",
+        error: e,
+      });
+    }
+  }
+  revokeCallback() {
+    try {
+      this.#callback.replace(null);
+    } catch (e) {
+      ErrorLog.rethrow({
+        functionName: "UniqueCallbackController.revokeCallback",
         error: e,
       });
     }
