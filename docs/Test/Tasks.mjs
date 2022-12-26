@@ -566,6 +566,6 @@ export class SignalController {
     return this.#signal;
   }
   dispatch() {
-    this[symDispatch]();
+    this.#signal[symDispatch]();
   }
 }
