@@ -490,24 +490,20 @@ export class Signal {
   }
   add(args) {
     try {
-      console.log(args);
       function isCallback(callback) {
         if (!("invoke" in callback)) {
-          console.log("no invoke");
           return false;
         }
         if (!(Types.isInvocable(callback.invoke))) {
-          console.log("invoke not a function");
           return false;
         }
         if (!("isRevoked" in callback)) {
-          console.log("no isRevoked");
           return false;
         }
         if (!(Types.isInvocable(callback.isRevoked))) {
-          console.log("isRevoked not a function");
           return false;
         }
+        return true;
       }
       const callback = (function () {
         if (isCallback(args)) {
