@@ -353,7 +353,7 @@ export class UniqueByteCallbackController {
       this.#callback.replace(null);
     } catch (e) {
       ErrorLog.rethrow({
-        functionName: "UniqueCallbackController.revokeCallback",
+        functionName: "UniqueByteCallbackController.revokeCallback",
         error: e,
       });
     }
