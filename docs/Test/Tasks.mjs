@@ -430,7 +430,7 @@ export function queueTask(args) {
       try {
         task.invoke(taskArgs);
       } catch (e) {
-        ErrorLog.topLevel({
+        ErrorLog.finalCatch({
           functionName: "queueTask callback",
           error: e,
         });
@@ -479,7 +479,7 @@ export function queueMicrotask(args) {
       try {
         task.invoke(taskArgs);
       } catch (e) {
-        ErrorLog.topLevel({
+        ErrorLog.finalCatch({
           functionName: "queueMicrotask callback",
           error: e,
         });
