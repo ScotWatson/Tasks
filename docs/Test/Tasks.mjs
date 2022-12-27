@@ -256,7 +256,7 @@ export class ByteCallback {
     if (Types.isNull(args)) {
       this.#allocate = null;
       this.#invoke = null;
-    } else if (!(Types.isSimpleObject(args))) {
+    } else if (Types.isSimpleObject(args)) {
       if (!(Object.hasOwn(args, "allocate"))) {
         throw "Argument \"allocate\" must be provided.";
       }
