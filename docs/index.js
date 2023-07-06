@@ -22,9 +22,9 @@ const asyncErrorLog = (async function () {
   }
 })();
 
-const asyncQueue = (async function () {
+const asyncTasks = (async function () {
   try {
-    const module = await import("https://scotwatson.github.io/Containers/20230705/Queue.mjs");
+    const module = await import("https://scotwatson.github.io/Tasks/20230705/Tasks.mjs");
     return module;
   } catch (e) {
     console.error(e);
@@ -33,17 +33,17 @@ const asyncQueue = (async function () {
 
 (async function () {
   try {
-    const modules = await Promise.all( [ asyncWindow, asyncErrorLog, asyncQueue ] );
+    const modules = await Promise.all( [ asyncWindow, asyncErrorLog, asyncTasks ] );
     start(modules);
   } catch (e) {
     console.error(e);
   }
 })();
 
-async function start( [ evtWindow, ErrorLog, Queue ] ) {
+async function start( [ evtWindow, ErrorLog, Tasks ] ) {
   try {
   } catch (e) {
-    ErrorLog.rethrow({
+    ErrorLog.finalCatch({
       functionName: "start",
       error: e,
     });
